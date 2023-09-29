@@ -3,6 +3,9 @@
 #include <wayland-client.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <cstdlib>
+#include <iostream>
+#include <string>
 
 // Wayland globals
 static struct wl_display *display = NULL;
@@ -14,6 +17,20 @@ static struct wl_surface *surface = NULL;
 // GTK globals
 static GtkWidget *panel;
 static GtkWidget *textbox;
+
+// Generate dynamic path
+std::string getDynamicPath(const std::string& relativePath) {
+    const char* homePath = std::getenv("HOME");
+    if (homePath != nullptr) {
+        std::string homeDirectory(homePath);
+        std::string fullPath = homeDirectory + "/" + relativePath;
+        return fullPath;
+    } else {
+        std::cerr << "HOME environment variable is not set." << std::endl;
+        return "";
+    }
+}
+
 
 static void registry_handle_global(
     void *data,
@@ -39,9 +56,7 @@ static const struct wl_registry_listener registry_listener = {
 };
 
 static void on_textbox_activate(GtkEntry *entry, gpointer user_data) {
-    // Handle textbox activation (e.g., close the app)
     const gchar *text = gtk_entry_get_text(entry);
-    g_print("Text entered: %s\n", text);
 
     // Use the "wl-clipboard" command-line tool to copy text to clipboard
     char *command = g_strdup_printf("wl-copy \"%s\"", text);
@@ -78,7 +93,8 @@ int main(int argc, char **argv) {
 
     // Load and apply the CSS file to the entire application
     GtkCssProvider *cssProvider = gtk_css_provider_new();
-    gtk_css_provider_load_from_path(cssProvider, "styles.css", NULL);
+    std::string stylesPath = getDynamicPath(".config/hypr/secure_text_display/styles.css");
+    gtk_css_provider_load_from_path(cssProvider,stylesPath.c_str(), NULL);
     gtk_style_context_add_provider_for_screen(gdk_screen_get_default(), GTK_STYLE_PROVIDER(cssProvider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
     g_signal_connect(textbox, "activate", G_CALLBACK(on_textbox_activate), NULL);
 
